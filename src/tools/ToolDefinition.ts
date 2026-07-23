@@ -68,7 +68,9 @@ export interface BaseToolDefinition<
   };
   schema: Schema;
   blockedByDialog: boolean;
-  verifyFilesSchema: Partial<Record<keyof Schema, FileVerificationOption>>;
+  verifyFilesSchema: Partial<
+    Record<keyof SchemaType<Schema>, FileVerificationOption>
+  >;
 }
 
 export interface ToolDefinition<
@@ -82,8 +84,14 @@ export interface ToolDefinition<
   ) => Promise<void>;
 }
 
+
+ 
+export type SchemaType<T extends zod.ZodRawShape> = zod.infer<
+  ReturnType<typeof zod.object<T>>
+>;
+
 export interface Request<Schema extends zod.ZodRawShape> {
-  params: zod.objectOutputType<Schema, zod.ZodTypeAny>;
+  params: SchemaType<Schema>;
 }
 
 export interface ImageContentData {
@@ -369,16 +377,16 @@ export type ContextPage = Readonly<{
   waitForTextOnPage(text: string[], timeout?: number): Promise<Element>;
 }>;
 
-export function defineTool<Schema extends zod.ZodRawShape>(
-  definition: ToolDefinition<Schema>,
-): ToolDefinition<Schema>;
-
 export function defineTool<
   Schema extends zod.ZodRawShape,
   Args extends ParsedArguments = ParsedArguments,
 >(
   definition: (args?: Args) => ToolDefinition<Schema>,
 ): (args?: Args) => ToolDefinition<Schema>;
+
+export function defineTool<Schema extends zod.ZodRawShape>(
+  definition: ToolDefinition<Schema>,
+): ToolDefinition<Schema>;
 
 export function defineTool<
   Schema extends zod.ZodRawShape,
@@ -410,7 +418,7 @@ export type DefinedPageTool<Schema extends zod.ZodRawShape = zod.ZodRawShape> =
   PageToolDefinition<Schema> & {
     pageScoped: true;
     handler: (
-      request: Request<Schema> & {page: ContextPage},
+      request: Request<SchemaType<Schema>> & {page: ContextPage},
       response: Response,
       context: Context,
     ) => Promise<void>;
@@ -458,16 +466,16 @@ export const pageIdSchema = {
 };
 
 export const timeoutSchema = {
-  timeout: zod
-    .number()
-    .int()
-    .optional()
-    .describe(
-      `Maximum wait time in milliseconds. If set to 0, the default timeout will be used.`,
-    )
-    .transform(value => {
-      return value && value <= 0 ? undefined : value;
-    }),
+  timeout: zod.preprocess(
+    value => (typeof value === 'number' && value <= 0 ? undefined : value),
+    zod
+      .number()
+      .int()
+      .optional()
+      .describe(
+        `Maximum wait time in milliseconds. If set to 0, the default timeout will be used.`,
+      ),
+  ),
 };
 
 export function viewportTransform(arg: string | undefined):

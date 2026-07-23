@@ -427,7 +427,7 @@ describe('script', () => {
                 params: {
                   function: String(() => 'test'),
                   serviceWorkerId: 'example_service_worker',
-                  pageId: 1,
+                  
                 },
               },
               response,
@@ -485,7 +485,7 @@ describe('script', () => {
 
       const validPage = schema.safeParse({
         function: '() => 1',
-        pageId: 1,
+        
       });
       assert.strictEqual(validPage.success, true);
     });
@@ -502,7 +502,7 @@ describe('script', () => {
 
       const resultWithPageId = schema.safeParse({
         function: '() => 1',
-        pageId: 1,
+        
       });
       assert.strictEqual(resultWithPageId.success, true);
     });

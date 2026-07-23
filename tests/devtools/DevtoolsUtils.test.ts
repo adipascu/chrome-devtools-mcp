@@ -45,7 +45,10 @@ describe('createTargetUniverse', () => {
       assert.ok(model);
 
       const pausedSpy = sinon.stub();
-      model.addEventListener('DebuggerPaused' as any, pausedSpy); // eslint-disable-line
+      model.addEventListener(
+        DevTools.DebuggerModel.Events.DebuggerPaused,
+        pausedSpy,
+      );
 
       const result = await page.evaluate('debugger; 1 + 1');
       assert.strictEqual(result, 2);

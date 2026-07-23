@@ -91,6 +91,12 @@ describe('emulation', () => {
           {
             params: {
               networkConditions: 'Offline',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -110,6 +116,12 @@ describe('emulation', () => {
           {
             params: {
               networkConditions: 'Slow 3G',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -128,7 +140,15 @@ describe('emulation', () => {
       await withMcpContext(async (response, context) => {
         await emulate.handler(
           {
-            params: {},
+            params: {
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
+            },
             page: context.getSelectedMcpPage(),
           },
           response,
@@ -148,6 +168,12 @@ describe('emulation', () => {
           {
             params: {
               networkConditions: 'Slow 11G',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -168,6 +194,12 @@ describe('emulation', () => {
           {
             params: {
               networkConditions: 'Slow 3G',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -198,6 +230,12 @@ describe('emulation', () => {
           {
             params: {
               cpuThrottlingRate: 4,
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -221,6 +259,12 @@ describe('emulation', () => {
           {
             params: {
               cpuThrottlingRate: 4,
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: mcpPage,
           },
@@ -248,6 +292,12 @@ describe('emulation', () => {
           {
             params: {
               cpuThrottlingRate: 1,
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -265,6 +315,12 @@ describe('emulation', () => {
           {
             params: {
               cpuThrottlingRate: 4,
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -292,6 +348,13 @@ describe('emulation', () => {
                 latitude: 48.137154,
                 longitude: 11.576124,
               },
+
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -315,6 +378,13 @@ describe('emulation', () => {
                 latitude: 48.137154,
                 longitude: 11.576124,
               },
+
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -327,7 +397,15 @@ describe('emulation', () => {
         // Then clear it by setting geolocation to null
         await emulate.handler(
           {
-            params: {},
+            params: {
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
+            },
             page: context.getSelectedMcpPage(),
           },
           response,
@@ -347,6 +425,13 @@ describe('emulation', () => {
                 latitude: 48.137154,
                 longitude: 11.576124,
               },
+
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -385,6 +470,13 @@ describe('emulation', () => {
                 hasTouch: true,
                 isLandscape: false,
               },
+
+              geolocation: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -421,6 +513,13 @@ describe('emulation', () => {
                 width: 400,
                 height: 400,
               },
+
+              geolocation: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -443,7 +542,15 @@ describe('emulation', () => {
         // Then clear it by setting viewport to null
         await emulate.handler(
           {
-            params: {},
+            params: {
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
+            },
             page: context.getSelectedMcpPage(),
           },
           response,
@@ -468,6 +575,13 @@ describe('emulation', () => {
                 width: 400,
                 height: 400,
               },
+
+              geolocation: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -497,6 +611,12 @@ describe('emulation', () => {
           {
             params: {
               userAgent: 'MyUA',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -517,6 +637,12 @@ describe('emulation', () => {
           {
             params: {
               userAgent: 'UA1',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -529,6 +655,12 @@ describe('emulation', () => {
           {
             params: {
               userAgent: 'UA2',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -548,6 +680,12 @@ describe('emulation', () => {
           {
             params: {
               userAgent: 'MyUA',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -559,7 +697,15 @@ describe('emulation', () => {
 
         await emulate.handler(
           {
-            params: {},
+            params: {
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
+            },
             page: context.getSelectedMcpPage(),
           },
           response,
@@ -580,6 +726,12 @@ describe('emulation', () => {
           {
             params: {
               userAgent: 'MyUA',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -617,6 +769,12 @@ describe('emulation', () => {
           {
             params: {
               extraHttpHeaders: {'X-Custom-Header': 'test-value'},
+              geolocation: undefined,
+              viewport: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -644,6 +802,12 @@ describe('emulation', () => {
           {
             params: {
               extraHttpHeaders: {'X-To-Clear': 'value'},
+              geolocation: undefined,
+              viewport: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -656,6 +820,12 @@ describe('emulation', () => {
           {
             params: {
               extraHttpHeaders: {},
+              geolocation: undefined,
+              viewport: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -691,6 +861,12 @@ describe('emulation', () => {
           {
             params: {
               extraHttpHeaders: {'X-Persist': 'yes'},
+              geolocation: undefined,
+              viewport: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -713,6 +889,12 @@ describe('emulation', () => {
           {
             params: {
               userAgent: 'MyUA',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -725,6 +907,12 @@ describe('emulation', () => {
           {
             params: {
               extraHttpHeaders: {'X-Test': 'value'},
+              geolocation: undefined,
+              viewport: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -745,6 +933,12 @@ describe('emulation', () => {
           {
             params: {
               extraHttpHeaders: {'X-Page': 'one'},
+              geolocation: undefined,
+              viewport: undefined,
+              colorScheme: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -775,6 +969,12 @@ describe('emulation', () => {
           {
             params: {
               colorScheme: 'dark',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -799,6 +999,12 @@ describe('emulation', () => {
           {
             params: {
               colorScheme: 'dark',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -811,6 +1017,12 @@ describe('emulation', () => {
           {
             params: {
               colorScheme: 'light',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -840,6 +1052,12 @@ describe('emulation', () => {
           {
             params: {
               colorScheme: 'dark',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },
@@ -860,6 +1078,12 @@ describe('emulation', () => {
           {
             params: {
               colorScheme: 'auto',
+              geolocation: undefined,
+              viewport: undefined,
+              extraHttpHeaders: undefined,
+              cpuThrottlingRate: undefined,
+              networkConditions: undefined,
+              userAgent: undefined
             },
             page: context.getSelectedMcpPage(),
           },

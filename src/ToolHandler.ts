@@ -12,7 +12,7 @@ import {McpResponse} from './McpResponse.js';
 import {SlimMcpResponse} from './SlimMcpResponse.js';
 import {ClearcutLogger} from './telemetry/ClearcutLogger.js';
 import type {CallToolResult} from './third_party/index.js';
-import {zod} from './third_party/index.js';
+import type {zod} from './third_party/index.js';
 import type {ToolCategory} from './tools/categories.js';
 import {labels, OFF_BY_DEFAULT_CATEGORIES} from './tools/categories.js';
 import type {
@@ -78,8 +78,8 @@ function getConditionStatus(
   return {disabled: false};
 }
 
-function getToolStatusInfo(
-  tool: ToolDefinition | DefinedPageTool,
+function getToolStatusInfo<Schema extends zod.ZodRawShape>(
+  tool: ToolDefinition<Schema> | DefinedPageTool<Schema>,
   serverArgs: ParsedArguments,
 ): {disabled: boolean; reason?: string} {
   const category = tool.annotations.category;
@@ -124,9 +124,9 @@ function getToolStatusInfo(
   return {disabled: false};
 }
 
-function isPageScopedTool(
-  tool: ToolDefinition | DefinedPageTool,
-): tool is DefinedPageTool {
+function isPageScopedTool<Schema extends zod.ZodRawShape>(
+  tool: ToolDefinition<Schema> | DefinedPageTool<Schema>,
+): tool is DefinedPageTool<Schema> {
   return 'pageScoped' in tool && tool.pageScoped === true;
 }
 
@@ -194,8 +194,8 @@ function shouldValidateFile(
   return false;
 }
 
-async function validateToolFiles(
-  tool: ToolDefinition | DefinedPageTool,
+async function validateToolFiles<Schema extends zod.ZodRawShape>(
+  tool: ToolDefinition<Schema> | DefinedPageTool<Schema>,
   params: Record<string, unknown>,
   context: McpContext,
 ): Promise<void> {
@@ -222,14 +222,14 @@ async function validateToolFiles(
   }
 }
 
-export class ToolHandler {
-  readonly inputSchema: zod.ZodRawShape;
-  readonly registeredInputSchema: zod.ZodTypeAny;
+export class ToolHandler<Schema extends zod.ZodRawShape = zod.ZodRawShape> {
+  readonly inputSchema: Schema | (Schema & typeof pageIdSchema);
+  readonly registeredInputSchema: Schema | (Schema & typeof pageIdSchema);
   readonly shouldRegister: boolean;
   private readonly disabledReason?: string;
 
   constructor(
-    private readonly tool: ToolDefinition | DefinedPageTool,
+    private readonly tool: ToolDefinition<Schema> | DefinedPageTool<Schema>,
     private readonly serverArgs: ParsedArguments,
     private readonly getContext: () => Promise<McpContext>,
     private readonly toolMutex: Mutex,
@@ -245,7 +245,7 @@ export class ToolHandler {
       !serverArgs.slim
         ? {...pageIdSchema, ...tool.schema}
         : tool.schema;
-    this.registeredInputSchema = zod.object(this.inputSchema).passthrough();
+    this.registeredInputSchema = this.inputSchema;
   }
 
   unknownArgumentNames(params: Record<string, unknown>): string[] {
@@ -254,7 +254,9 @@ export class ToolHandler {
     );
   }
 
-  async handle(params: Record<string, unknown>): Promise<CallToolResult> {
+  async handle(
+    params: zod.infer<zod.ZodObject<Schema>>,
+  ): Promise<CallToolResult> {
     if (this.disabledReason) {
       return {
         content: [
@@ -308,7 +310,7 @@ export class ToolHandler {
         await validateToolFiles(this.tool, params, context);
         if (isPageScopedTool(this.tool)) {
           const pageId =
-            typeof params.pageId === 'number' ? params.pageId : undefined;
+            params && typeof params === 'object' && 'pageId' in params && typeof params.pageId === 'number' ? params.pageId : undefined;
           page =
             this.serverArgs.pageIdRouting &&
             pageId !== undefined &&
