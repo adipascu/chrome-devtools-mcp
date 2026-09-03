@@ -28,6 +28,59 @@ launch its own temporary Chrome profile, also pass `--isolated`. This avoids
 sharing the default Chrome DevTools MCP user data directory between those
 server instances.
 
+## Sharing one browser connection over HTTP
+
+Every stdio server process opens its own connection to Chrome. With
+`--autoConnect`, Chrome asks for permission each time a client attaches while
+another one is still connected, so several coding agent sessions driving the
+same browser stack up "Allow remote debugging?" prompts.
+
+Start a single long-running server with `--httpPort` instead. It serves MCP over
+Streamable HTTP, gives every client session its own MCP server instance with its
+own selected page, and shares the one browser connection between them. Chrome
+sees a single client, so the prompt is answered once for the lifetime of the
+process.
+
+```sh
+CHROME_DEVTOOLS_MCP_HTTP_TOKEN=change-me npx chrome-devtools-mcp@latest --autoConnect --httpPort 9333
+```
+
+Point every MCP client at the same URL. The snippet uses the shape Claude Code
+reads, and other clients name these keys differently, so check the client's own
+MCP documentation:
+
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "type": "http",
+      "url": "http://127.0.0.1:9333/mcp",
+      "headers": {
+        "Authorization": "Bearer change-me"
+      }
+    }
+  }
+}
+```
+
+The server binds to `127.0.0.1` unless `--httpHost` says otherwise, and refuses
+any other host unless `CHROME_DEVTOOLS_MCP_HTTP_TOKEN` is set. Anything that can
+reach the port can drive the browser, so keep it on loopback and set the token
+anyway. Without the token, every local process is accepted. When bound to
+loopback, requests must carry a `Host` header naming a loopback address such as
+`localhost` or `127.0.0.1`, and anything else is answered with `403`.
+
+A session ends when its client sends an HTTP `DELETE` for its `Mcp-Session-Id`,
+which closes that client's server instance while the browser connection stays up
+for the others. A client that exits without sending `DELETE` keeps its session
+until the server restarts, and at most 64 sessions may be open at once.
+
+The server prints the URL it listens on to stderr, which is how to find the port
+when `--httpPort 0` lets the OS pick one.
+
+Page-scoped tools take a `pageId`, so concurrent sessions can work on different
+tabs without stepping on each other's selected page.
+
 ## User data directory
 
 By default, `chrome-devtools-mcp` starts a Chrome's stable channel instance using the following user

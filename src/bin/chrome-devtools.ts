@@ -57,6 +57,9 @@ function getCliOptions() {
   // Missing CLI serialization.
   delete options.viewport;
 
+  delete options.httpPort;
+  delete options.httpHost;
+
   // Change the defaults for the CLI.
   delete options.experimentalStructuredContent;
   delete options.experimentalInteropTools;

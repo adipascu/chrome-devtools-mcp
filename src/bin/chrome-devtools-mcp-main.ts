@@ -9,7 +9,8 @@ import '../utils/polyfill.js';
 import process from 'node:process';
 
 import {closeBrowser} from '../browser.js';
-import {McpServer, logDisclaimers} from '../index.js';
+import {HttpServer} from '../http.js';
+import {McpServer, initializeTelemetry, logDisclaimers} from '../index.js';
 import {ClearcutLogger} from '../telemetry/ClearcutLogger.js';
 import {computeFlagUsage} from '../telemetry/flagUtils.js';
 import {StdioServerTransport} from '../third_party/index.js';
@@ -33,6 +34,8 @@ if (process.env['CHROME_DEVTOOLS_MCP_CRASH_ON_UNCAUGHT'] !== 'true') {
   });
 }
 
+let httpServer: HttpServer | undefined;
+
 // Shutdown on stdin EOF (stdio MCP convention — the client closes the
 // transport to signal exit) and on standard termination signals. Without
 // this, an active Chrome subprocess keeps the Node event loop ref'd after
@@ -52,15 +55,20 @@ async function shutdown(reason: string): Promise<void> {
     logger?.('Shutdown timeout exceeded, forcing exit');
     process.exit(0);
   }, 5000).unref();
+  await httpServer?.close().catch((error: unknown) => {
+    logger?.('Failed to close HTTP server', error);
+  });
   await closeBrowser();
   process.exit(0);
 }
-process.stdin.on('end', () => {
-  void shutdown('stdin end');
-});
-process.stdin.on('close', () => {
-  void shutdown('stdin close');
-});
+if (args.httpPort === undefined) {
+  process.stdin.on('end', () => {
+    void shutdown('stdin end');
+  });
+  process.stdin.on('close', () => {
+    void shutdown('stdin close');
+  });
+}
 process.on('SIGTERM', () => {
   void shutdown('SIGTERM');
 });
@@ -72,12 +80,24 @@ process.on('SIGHUP', () => {
 });
 
 logger?.(`Starting Chrome DevTools MCP Server v${VERSION}`);
-const server = await McpServer.from(args, {
-  logFile,
-});
-const transport = new StdioServerTransport();
-await server.connect(transport);
-logger?.('Chrome DevTools MCP Server connected');
+initializeTelemetry(args);
+if (args.httpPort === undefined) {
+  const server = await McpServer.from(args, {
+    logFile,
+  });
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  logger?.('Chrome DevTools MCP Server connected');
+} else {
+  httpServer = await HttpServer.listen({
+    host: args.httpHost ?? '127.0.0.1',
+    port: args.httpPort,
+    token: process.env['CHROME_DEVTOOLS_MCP_HTTP_TOKEN'],
+    createMcpServer: () => McpServer.from(args, {logFile}),
+  });
+  logger?.(`Chrome DevTools MCP Server listening on ${httpServer.url}`);
+  console.error(`Chrome DevTools MCP Server listening on ${httpServer.url}`);
+}
 logDisclaimers(args);
 void ClearcutLogger.get()?.logDailyActiveIfNeeded();
 void ClearcutLogger.get()?.logServerStart(computeFlagUsage(args, mcpOptions));

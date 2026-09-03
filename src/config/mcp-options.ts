@@ -127,6 +127,39 @@ export const mcpOptions = {
     describe:
       'Path to a file to write debug logs to. Set the env variable `DEBUG` to `*` to enable verbose logs. Useful for submitting bug reports.',
   },
+  httpPort: {
+    type: 'number',
+    requiresArg: true,
+    describe:
+      'Serve MCP over Streamable HTTP on this port instead of stdio. Every client session gets its own MCP server instance while all of them share the one browser connection, so a Chrome remote debugging prompt is answered once per process instead of once per client. Set the env variable `CHROME_DEVTOOLS_MCP_HTTP_TOKEN` to require a bearer token. Use `0` to let the OS pick a free port.',
+    coerce: (port: number | undefined) => {
+      if (port === undefined) {
+        return;
+      }
+      if (!Number.isInteger(port) || port < 0 || port > 65535) {
+        throw new Error(`Provided httpPort ${port} is not a valid port.`);
+      }
+      return port;
+    },
+  },
+  httpHost: {
+    type: 'string',
+    requiresArg: true,
+    implies: 'httpPort',
+    defaultDescription: '127.0.0.1',
+    describe:
+      'Host to bind the HTTP transport to. Only used together with `--httpPort`. Anything that can reach the port can drive the browser, so a host outside loopback is refused unless `CHROME_DEVTOOLS_MCP_HTTP_TOKEN` is set.',
+    coerce: (host: string | undefined) => {
+      if (host === undefined) {
+        return;
+      }
+      const trimmed = host.trim();
+      if (trimmed === '') {
+        throw new Error('Provided httpHost is empty.');
+      }
+      return trimmed;
+    },
+  },
   viewport: {
     type: 'string',
     describe:
@@ -496,6 +529,10 @@ export function parser(
       ['$0 --channel dev', 'Use Chrome Dev installed on this system'],
       ['$0 --channel stable', 'Use stable Chrome installed on this system'],
       ['$0 --logFile /tmp/log.txt', 'Save logs to a file'],
+      [
+        '$0 --auto-connect --http-port 9333',
+        'Serve MCP over HTTP so every client session shares the one browser connection',
+      ],
       ['$0 --help', 'Print CLI options'],
       [
         '$0 --viewport 1280x720',
