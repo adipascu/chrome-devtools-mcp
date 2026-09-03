@@ -8,12 +8,7 @@ import assert from 'node:assert';
 import http from 'node:http';
 import {after, before, describe, it} from 'node:test';
 
-import {Client} from '@modelcontextprotocol/sdk/client/index.js';
-import {
-  StreamableHTTPClientTransport,
-  StreamableHTTPError,
-} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import {CallToolResultSchema} from '@modelcontextprotocol/sdk/types.js';
+import {StreamableHTTPError} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {executablePath} from 'puppeteer';
 
 import {closeBrowser} from '../src/browser.js';
@@ -21,45 +16,17 @@ import {parser} from '../src/config/mcp-options.js';
 import {HttpServer, type HttpServerOptions} from '../src/http.js';
 import {McpServer} from '../src/index.js';
 
-import {getTextContent} from './utils.js';
+import {
+  callToolText,
+  connectMcpOverHttp,
+  countListedPages,
+  disconnectMcpSession,
+} from './utils.js';
 
 const TOKEN = 'http-test-token';
 
-async function connect(
-  url: URL,
-  token: string | undefined = TOKEN,
-): Promise<{client: Client; transport: StreamableHTTPClientTransport}> {
-  const transport = new StreamableHTTPClientTransport(url, {
-    requestInit: token
-      ? {headers: {Authorization: `Bearer ${token}`}}
-      : undefined,
-  });
-  const client = new Client({name: 'http-test', version: '1.0.0'});
-  await client.connect(transport);
-  return {client, transport};
-}
-
-async function disconnect(session: {
-  client: Client;
-  transport: StreamableHTTPClientTransport;
-}): Promise<void> {
-  await session.transport.terminateSession();
-  await session.client.close();
-}
-
-async function callText(
-  client: Client,
-  name: string,
-  args: Record<string, unknown> = {},
-): Promise<string> {
-  const result = CallToolResultSchema.parse(
-    await client.callTool({name, arguments: args}),
-  );
-  return result.content.map(getTextContent).join('\n');
-}
-
-function countPages(listing: string): number {
-  return listing.split('\n').filter(line => /^\d+: /.test(line)).length;
+function connect(url: URL, token: string | undefined = TOKEN) {
+  return connectMcpOverHttp(url, token);
 }
 
 async function withRetry<T>(run: () => Promise<T>): Promise<T> {
@@ -200,26 +167,31 @@ describe('HttpServer', () => {
       assert.strictEqual(server.sessionCount, 2);
       const [, listing] = await withRetry(() =>
         Promise.all([
-          callText(first.client, 'list_pages'),
-          callText(second.client, 'list_pages'),
+          callToolText(first.client, 'list_pages'),
+          callToolText(second.client, 'list_pages'),
         ]),
       );
-      const before = countPages(listing);
-      await callText(first.client, 'new_page', {url: 'about:blank'});
-      const after = countPages(await callText(second.client, 'list_pages'));
+      const before = countListedPages(listing);
+      await callToolText(first.client, 'new_page', {url: 'about:blank'});
+      const after = countListedPages(
+        await callToolText(second.client, 'list_pages'),
+      );
       assert.strictEqual(after, before + 1);
     } finally {
-      await Promise.allSettled([disconnect(first), disconnect(second)]);
+      await Promise.allSettled([
+        disconnectMcpSession(first),
+        disconnectMcpSession(second),
+      ]);
     }
     assert.strictEqual(server.sessionCount, 0);
   });
 
   it('forgets a session once the client terminates it', async () => {
     const session = await connect(url);
-    await callText(session.client, 'list_pages');
+    await callToolText(session.client, 'list_pages');
     const sessionId = session.transport.sessionId;
     assert.ok(sessionId);
-    await disconnect(session);
+    await disconnectMcpSession(session);
     const status = await rawRequest(url, {
       method: 'POST',
       headers: {Authorization: `Bearer ${TOKEN}`, 'Mcp-Session-Id': sessionId},
@@ -240,30 +212,31 @@ describe('HttpServer', () => {
         return await createMcpServer();
       },
     });
+    const attempts = await Promise.allSettled([
+      connect(new URL(limited.url)),
+      connect(new URL(limited.url)),
+      connect(new URL(limited.url)),
+    ]);
+    const admitted = attempts.filter(attempt => attempt.status === 'fulfilled');
+    const refused = attempts.filter(attempt => attempt.status === 'rejected');
     try {
-      const attempts = await Promise.allSettled([
-        connect(new URL(limited.url)),
-        connect(new URL(limited.url)),
-        connect(new URL(limited.url)),
-      ]);
-      const admitted = attempts.filter(
-        attempt => attempt.status === 'fulfilled',
-      );
-      const refused = attempts.filter(attempt => attempt.status === 'rejected');
       assert.strictEqual(admitted.length, 1);
       assert.strictEqual(refused.length, 2);
       for (const attempt of refused) {
-        assert.ok(rejectsWithStatus(503)(attempt.reason));
+        assert.ok(
+          rejectsWithStatus(503)(attempt.reason),
+          String(attempt.reason),
+        );
       }
       assert.strictEqual(limited.sessionCount, 1);
       await assert.rejects(
         connect(new URL(limited.url)),
         rejectsWithStatus(503),
       );
-      for (const attempt of admitted) {
-        await disconnect(attempt.value);
-      }
     } finally {
+      await Promise.allSettled(
+        admitted.map(attempt => disconnectMcpSession(attempt.value)),
+      );
       await limited.close();
     }
   });
@@ -275,10 +248,10 @@ describe('HttpServer', () => {
       createMcpServer,
     });
     try {
-      const session = await connect(new URL(open.url), undefined);
+      const session = await connectMcpOverHttp(new URL(open.url));
       const {tools} = await session.client.listTools();
       assert.ok(tools.some(tool => tool.name === 'list_pages'));
-      await disconnect(session);
+      await disconnectMcpSession(session);
     } finally {
       await open.close();
     }
