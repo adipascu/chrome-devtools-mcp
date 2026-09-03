@@ -12,8 +12,10 @@ import {describe, it} from 'node:test';
 import {executablePath} from 'puppeteer';
 
 import {
+  closeBrowser,
   detectDisplay,
   ensureBrowserConnected,
+  ensureBrowserLaunched,
   launch,
   makeTargetFilter,
 } from '../src/browser.js';
@@ -94,6 +96,48 @@ describe('browser', () => {
         }
       } finally {
         await safeClose(browser1);
+      }
+    });
+  });
+
+  it('launches one browser for concurrent callers', async () => {
+    await runWithRetry(async () => {
+      const options = {
+        headless: true,
+        isolated: true,
+        executablePath: await executablePath(),
+        devtools: false,
+      };
+      try {
+        const [first, second] = await Promise.all([
+          ensureBrowserLaunched(options),
+          ensureBrowserLaunched(options),
+        ]);
+        assert.strictEqual(first, second);
+        assert.strictEqual(await ensureBrowserLaunched(options), first);
+      } finally {
+        await closeBrowser();
+      }
+    });
+  });
+
+  it('closes a browser whose launch is still in flight', async () => {
+    await runWithRetry(async () => {
+      const launching = ensureBrowserLaunched({
+        headless: true,
+        isolated: true,
+        executablePath: await executablePath(),
+        devtools: false,
+      });
+      await closeBrowser();
+      const launched = await launching;
+      try {
+        assert.strictEqual(launched.connected, false);
+      } finally {
+        if (launched.connected) {
+          await safeClose(launched);
+        }
+        await closeBrowser();
       }
     });
   });

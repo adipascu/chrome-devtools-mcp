@@ -31,7 +31,7 @@ export function makeTargetFilter(enableExtensions = false) {
   };
 }
 
-export async function ensureBrowserConnected(options: {
+interface McpConnectOptions {
   browserURL?: string;
   wsEndpoint?: string;
   wsHeaders?: Record<string, string>;
@@ -41,11 +41,28 @@ export async function ensureBrowserConnected(options: {
   enableExtensions?: boolean;
   blocklist?: string[];
   allowlist?: string[];
-}) {
-  const {channel, enableExtensions} = options;
+}
+
+let pendingBrowser: Promise<Browser> | undefined;
+
+async function ensureBrowser(start: () => Promise<Browser>): Promise<Browser> {
   if (browser?.connected) {
     return browser;
   }
+  pendingBrowser ??= start().finally(() => {
+    pendingBrowser = undefined;
+  });
+  return await pendingBrowser;
+}
+
+export async function ensureBrowserConnected(
+  options: McpConnectOptions,
+): Promise<Browser> {
+  return await ensureBrowser(() => connectBrowser(options));
+}
+
+async function connectBrowser(options: McpConnectOptions): Promise<Browser> {
+  const {channel, enableExtensions} = options;
 
   const connectOptions: Parameters<typeof puppeteer.connect>[0] = {
     targetFilter: makeTargetFilter(enableExtensions),
@@ -266,9 +283,10 @@ export async function launch(options: McpLaunchOptions): Promise<Browser> {
 export async function ensureBrowserLaunched(
   options: McpLaunchOptions,
 ): Promise<Browser> {
-  if (browser?.connected) {
-    return browser;
-  }
+  return await ensureBrowser(() => launchBrowser(options));
+}
+
+async function launchBrowser(options: McpLaunchOptions): Promise<Browser> {
   // Assign mode before browser; see the connect path above for rationale.
   const launched = await launch(options);
   browserMode = 'launched';
@@ -284,6 +302,7 @@ export async function ensureBrowserLaunched(
  * on stdin EOF / SIGTERM / SIGINT.
  */
 export async function closeBrowser(): Promise<void> {
+  await pendingBrowser?.catch(() => undefined);
   const b = browser;
   const mode = browserMode;
   browser = undefined;
