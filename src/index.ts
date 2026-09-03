@@ -48,6 +48,20 @@ export interface McpServerOptions {
   logFile?: fs.WriteStream;
 }
 
+export function initializeTelemetry(serverArgs: ParsedArguments): void {
+  if (!serverArgs.usageStatistics || ClearcutLogger.get()) {
+    return;
+  }
+  ClearcutLogger.initialize({
+    persistence: new FilePersistence(),
+    logFile: serverArgs.logFile,
+    appVersion: VERSION,
+    clearcutEndpoint: serverArgs.clearcutEndpoint,
+    clearcutForceFlushIntervalMs: serverArgs.clearcutForceFlushIntervalMs,
+    clearcutIncludePidHeader: serverArgs.clearcutIncludePidHeader,
+  });
+}
+
 export class McpServer {
   readonly server: SdkMcpServer;
   #serverArgs: ParsedArguments;
@@ -69,17 +83,7 @@ export class McpServer {
     this.#serverArgs = serverArgs;
     this.#options = options;
 
-    if (this.#serverArgs.usageStatistics && !ClearcutLogger.get()) {
-      ClearcutLogger.initialize({
-        persistence: new FilePersistence(),
-        logFile: this.#serverArgs.logFile,
-        appVersion: VERSION,
-        clearcutEndpoint: this.#serverArgs.clearcutEndpoint,
-        clearcutForceFlushIntervalMs:
-          this.#serverArgs.clearcutForceFlushIntervalMs,
-        clearcutIncludePidHeader: this.#serverArgs.clearcutIncludePidHeader,
-      });
-    }
+    initializeTelemetry(this.#serverArgs);
 
     this.server = new SdkMcpServer(
       {

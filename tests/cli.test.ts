@@ -86,6 +86,40 @@ describe('cli args parsing', () => {
     }
   });
 
+  it('rejects --httpHost without --httpPort', async () => {
+    assert.throws(
+      () => parseArguments(['--httpHost', '127.0.0.1']),
+      /httpPort|http-port/,
+    );
+  });
+
+  it('rejects a bare --httpPort', async () => {
+    assert.throws(() => parseArguments(['--httpPort']), /Not enough arguments/);
+  });
+
+  it('rejects an empty --httpHost', async () => {
+    assert.throws(
+      () => parseArguments(['--httpHost', ' ', '--httpPort', '0']),
+      /empty/,
+    );
+  });
+
+  it('trims --httpHost', async () => {
+    const args = parseArguments([
+      '--httpHost',
+      ' localhost ',
+      '--httpPort',
+      '0',
+    ]);
+    assert.strictEqual(args.httpHost, 'localhost');
+  });
+
+  it('parses an OS-assigned http port', async () => {
+    const args = parseArguments(['--httpPort', '0']);
+    assert.strictEqual(args.httpPort, 0);
+    assert.strictEqual(args.httpHost, undefined);
+  });
+
   it('parses mixed-form option names', async () => {
     const args = parseArguments(['--category-experimentalWebmcp']);
 

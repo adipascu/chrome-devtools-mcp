@@ -85,6 +85,16 @@ The Chrome DevTools MCP server supports the following configuration option:
   - **Type:** string
   - **Default:** `false`
 
+- **`--httpPort`/ `--http-port`**
+  Serve MCP over Streamable HTTP on this port instead of stdio. Every client session gets its own MCP server instance while all of them share the one browser connection, so a Chrome remote debugging prompt is answered once per process instead of once per client. Set the env variable `CHROME_DEVTOOLS_MCP_HTTP_TOKEN` to require a bearer token. Use `0` to let the OS pick a free port.
+  - **Type:** number
+  - **Default:** `false`
+
+- **`--httpHost`/ `--http-host`**
+  Host to bind the HTTP transport to. Only used together with `--httpPort`. Anything that can reach the port can drive the browser, so a host outside loopback is refused unless `CHROME_DEVTOOLS_MCP_HTTP_TOKEN` is set.
+  - **Type:** string
+  - **Default:** `127.0.0.1`
+
 - **`--viewport`**
   Initial viewport size for the Chrome instances started by the server. For example, `1280x720`. In headless mode, max size is 3840x2160px.
   - **Type:** string

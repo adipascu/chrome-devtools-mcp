@@ -126,7 +126,7 @@ Find the complete list of server parameters (e.g., `--headless`, `--isolated`, `
 
 ## Advanced Usage
 
-For advanced features such as handling concurrent sessions, persistent user data directories, connecting to a running Chrome instance instead of starting a new one, or debugging on Android, see our [Advanced Usage Guide][advanced-usage-guide].
+For advanced features such as handling concurrent sessions, persistent user data directories, connecting to a running Chrome instance instead of starting a new one, sharing one browser connection over HTTP between several clients, or debugging on Android, see our [Advanced Usage Guide][advanced-usage-guide].
 
 ## Integrating as a browser subagent
 
