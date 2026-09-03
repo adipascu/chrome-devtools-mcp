@@ -8,7 +8,12 @@ import assert from 'node:assert';
 import {spawn, type ChildProcess} from 'node:child_process';
 import path from 'node:path';
 
-import type {CallToolResult} from '@modelcontextprotocol/sdk/types.js';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {
+  CallToolResultSchema,
+  type CallToolResult,
+} from '@modelcontextprotocol/sdk/types.js';
 
 import type {Browser} from 'puppeteer';
 import puppeteer, {Locator} from 'puppeteer';
@@ -53,6 +58,47 @@ export function getImageContent(content: CallToolResult['content'][number]): {
     return {data: content.data, mimeType: content.mimeType};
   }
   throw new Error(`Expected image content but got ${content.type}`);
+}
+
+export interface McpHttpSession {
+  client: Client;
+  transport: StreamableHTTPClientTransport;
+}
+
+export async function connectMcpOverHttp(
+  url: URL,
+  token?: string,
+): Promise<McpHttpSession> {
+  const transport = new StreamableHTTPClientTransport(url, {
+    requestInit: token
+      ? {headers: {Authorization: `Bearer ${token}`}}
+      : undefined,
+  });
+  const client = new Client({name: 'http-test', version: '1.0.0'});
+  await client.connect(transport);
+  return {client, transport};
+}
+
+export async function disconnectMcpSession(
+  session: McpHttpSession,
+): Promise<void> {
+  await session.transport.terminateSession();
+  await session.client.close();
+}
+
+export async function callToolText(
+  client: Client,
+  name: string,
+  args: Record<string, unknown> = {},
+): Promise<string> {
+  const result = CallToolResultSchema.parse(
+    await client.callTool({name, arguments: args}),
+  );
+  return result.content.map(getTextContent).join('\n');
+}
+
+export function countListedPages(listing: string): number {
+  return listing.split('\n').filter(line => /^\d+: /.test(line)).length;
 }
 
 export function extractExtensionId(response: McpResponse) {
