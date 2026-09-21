@@ -445,5 +445,9 @@
   {
     "name": "http_host_present",
     "flagType": "boolean"
+  },
+  {
+    "name": "http_session_idle_timeout_present",
+    "flagType": "boolean"
   }
 ]

@@ -118,6 +118,32 @@ describe('cli args parsing', () => {
     const args = parseArguments(['--httpPort', '0']);
     assert.strictEqual(args.httpPort, 0);
     assert.strictEqual(args.httpHost, undefined);
+    assert.strictEqual(args.httpSessionIdleTimeout, undefined);
+  });
+
+  it('rejects --httpSessionIdleTimeout without --httpPort', async () => {
+    assert.throws(
+      () => parseArguments(['--httpSessionIdleTimeout', '5']),
+      /httpPort|http-port/,
+    );
+  });
+
+  it('rejects a negative --httpSessionIdleTimeout', async () => {
+    assert.throws(
+      () =>
+        parseArguments(['--httpSessionIdleTimeout', '-1', '--httpPort', '0']),
+      /not a number of minutes/,
+    );
+  });
+
+  it('parses --httpSessionIdleTimeout', async () => {
+    const args = parseArguments([
+      '--httpSessionIdleTimeout',
+      '5',
+      '--httpPort',
+      '0',
+    ]);
+    assert.strictEqual(args.httpSessionIdleTimeout, 5);
   });
 
   it('parses mixed-form option names', async () => {

@@ -93,6 +93,10 @@ if (args.httpPort === undefined) {
     host: args.httpHost ?? '127.0.0.1',
     port: args.httpPort,
     token: process.env['CHROME_DEVTOOLS_MCP_HTTP_TOKEN'],
+    sessionIdleTimeoutMs:
+      args.httpSessionIdleTimeout === undefined
+        ? undefined
+        : args.httpSessionIdleTimeout * 60 * 1000,
     createMcpServer: () => McpServer.from(args, {logFile}),
   });
   logger?.(`Chrome DevTools MCP Server listening on ${httpServer.url}`);

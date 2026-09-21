@@ -95,6 +95,11 @@ The Chrome DevTools MCP server supports the following configuration option:
   - **Type:** string
   - **Default:** `127.0.0.1`
 
+- **`--httpSessionIdleTimeout`/ `--http-session-idle-timeout`**
+  Minutes a client session may go without a request before the server closes it and frees its slot. Only used together with `--httpPort`. Clients that exit without ending their session would otherwise hold slots until the server restarts. Use `0` to keep every session until it is ended by its client.
+  - **Type:** number
+  - **Default:** `30`
+
 - **`--viewport`**
   Initial viewport size for the Chrome instances started by the server. For example, `1280x720`. In headless mode, max size is 3840x2160px.
   - **Type:** string
