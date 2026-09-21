@@ -19,18 +19,22 @@ import {isLocalhost} from './utils/url.js';
 
 export const MCP_PATH = '/mcp';
 export const DEFAULT_MAX_SESSIONS = 64;
+export const DEFAULT_SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+const MAX_SWEEP_INTERVAL_MS = 60 * 1000;
 
 export interface HttpServerOptions {
   host: string;
   port: number;
   token?: string;
   maxSessions?: number;
+  sessionIdleTimeoutMs?: number;
   createMcpServer: () => Promise<McpServer>;
 }
 
 interface Session {
   transport: StreamableHTTPServerTransport;
   server: McpServer;
+  lastUsed: number;
 }
 
 export class HttpServer {
@@ -41,11 +45,15 @@ export class HttpServer {
   #pendingSessions = 0;
   #sessions = new Map<string, Session>();
   #httpServer: http.Server;
+  #idleTimeoutMs: number;
+  #sweepTimer: NodeJS.Timeout | undefined;
 
   private constructor(options: HttpServerOptions) {
     this.#options = options;
     this.#port = options.port;
     this.#loopback = isLoopback(options.host);
+    this.#idleTimeoutMs =
+      options.sessionIdleTimeoutMs ?? DEFAULT_SESSION_IDLE_TIMEOUT_MS;
     if (!options.token && !this.#loopback) {
       throw new Error(
         `Refusing to listen on ${options.host} without a token. Bind to a loopback address or configure a bearer token.`,
@@ -87,6 +95,7 @@ export class HttpServer {
       return;
     }
     this.#closed = true;
+    this.#stopSweeping();
     const results = await Promise.allSettled(
       [...this.#sessions.keys()].map(sessionId =>
         this.#closeSession(sessionId),
@@ -143,6 +152,7 @@ export class HttpServer {
         writeJsonRpcError(res, 404, -32001, 'Session not found');
         return;
       }
+      session.lastUsed = Date.now();
       await session.transport.handleRequest(req, res);
       return;
     }
@@ -207,7 +217,12 @@ export class HttpServer {
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: sessionId => {
-        this.#sessions.set(sessionId, {transport, server});
+        this.#sessions.set(sessionId, {
+          transport,
+          server,
+          lastUsed: Date.now(),
+        });
+        this.#startSweeping();
         logger?.(
           `HTTP session opened: ${sessionId} (${this.#sessions.size} active)`,
         );
@@ -237,10 +252,51 @@ export class HttpServer {
       return;
     }
     this.#sessions.delete(sessionId);
+    if (this.#sessions.size === 0) {
+      this.#stopSweeping();
+    }
     logger?.(
       `HTTP session closed: ${sessionId} (${this.#sessions.size} active)`,
     );
     await session.server.close();
+  }
+
+  #startSweeping(): void {
+    if (this.#sweepTimer !== undefined || this.#idleTimeoutMs <= 0) {
+      return;
+    }
+    const timer = setInterval(
+      () => {
+        this.#reapIdleSessions();
+      },
+      Math.min(this.#idleTimeoutMs, MAX_SWEEP_INTERVAL_MS),
+    );
+    timer.unref();
+    this.#sweepTimer = timer;
+  }
+
+  #stopSweeping(): void {
+    if (this.#sweepTimer === undefined) {
+      return;
+    }
+    clearInterval(this.#sweepTimer);
+    this.#sweepTimer = undefined;
+  }
+
+  #reapIdleSessions(): void {
+    const now = Date.now();
+    for (const [sessionId, session] of [...this.#sessions]) {
+      const idleMs = now - session.lastUsed;
+      if (idleMs < this.#idleTimeoutMs) {
+        continue;
+      }
+      logger?.(
+        `HTTP session idle for ${Math.round(idleMs / 1000)}s, closing: ${sessionId}`,
+      );
+      this.#closeSession(sessionId).catch((error: unknown) => {
+        logger?.(`Failed to close idle HTTP session ${sessionId}`, error);
+      });
+    }
   }
 
   #authorized(req: IncomingMessage): boolean {
