@@ -72,8 +72,13 @@ loopback, requests must carry a `Host` header naming a loopback address such as
 
 A session ends when its client sends an HTTP `DELETE` for its `Mcp-Session-Id`,
 which closes that client's server instance while the browser connection stays up
-for the others. A client that exits without sending `DELETE` keeps its session
-until the server restarts, and at most 64 sessions may be open at once.
+for the others. At most 64 sessions may be open at once.
+
+Many clients exit without sending `DELETE`, so a session is also closed once it
+has gone 30 minutes without a request, which frees its slot. Pass a different
+number of minutes to `--httpSessionIdleTimeout`, or `0` to keep every session
+until its client ends it. Only requests count as activity, so a client holding
+an idle event stream open is closed like any other idle session.
 
 The server prints the URL it listens on to stderr, which is how to find the port
 when `--httpPort 0` lets the OS pick one.

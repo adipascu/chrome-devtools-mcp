@@ -59,6 +59,7 @@ function getCliOptions() {
 
   delete options.httpPort;
   delete options.httpHost;
+  delete options.httpSessionIdleTimeout;
 
   // Change the defaults for the CLI.
   delete options.experimentalStructuredContent;

@@ -160,6 +160,25 @@ export const mcpOptions = {
       return trimmed;
     },
   },
+  httpSessionIdleTimeout: {
+    type: 'number',
+    requiresArg: true,
+    implies: 'httpPort',
+    defaultDescription: '30',
+    describe:
+      'Minutes a client session may go without a request before the server closes it and frees its slot. Only used together with `--httpPort`. Clients that exit without ending their session would otherwise hold slots until the server restarts. Use `0` to keep every session until it is ended by its client.',
+    coerce: (minutes: number | undefined) => {
+      if (minutes === undefined) {
+        return;
+      }
+      if (!Number.isFinite(minutes) || minutes < 0) {
+        throw new Error(
+          `Provided httpSessionIdleTimeout ${minutes} is not a number of minutes.`,
+        );
+      }
+      return minutes;
+    },
+  },
   viewport: {
     type: 'string',
     describe:
