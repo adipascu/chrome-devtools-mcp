@@ -75,6 +75,18 @@ function rejectsWithStatus(status: number): (error: unknown) => boolean {
   return error => error instanceof StreamableHTTPError && error.code === status;
 }
 
+const IDLE_TIMEOUT_MS = 4000;
+
+async function waitForSessionCount(
+  server: HttpServer,
+  expected: number,
+): Promise<void> {
+  const deadline = Date.now() + IDLE_TIMEOUT_MS * 8;
+  while (server.sessionCount !== expected && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+}
+
 const ping = JSON.stringify({jsonrpc: '2.0', id: 1, method: 'ping'});
 
 describe('HttpServer', () => {
@@ -238,6 +250,75 @@ describe('HttpServer', () => {
         admitted.map(attempt => disconnectMcpSession(attempt.value)),
       );
       await limited.close();
+    }
+  });
+
+  it('closes a session that stops sending requests', async () => {
+    const reaping = await HttpServer.listen({
+      host: '127.0.0.1',
+      port: 0,
+      token: TOKEN,
+      sessionIdleTimeoutMs: IDLE_TIMEOUT_MS,
+      createMcpServer,
+    });
+    try {
+      const session = await connect(new URL(reaping.url));
+      await session.client.listTools();
+      assert.strictEqual(reaping.sessionCount, 1);
+      await waitForSessionCount(reaping, 0);
+      assert.strictEqual(reaping.sessionCount, 0);
+      const status = await rawRequest(new URL(reaping.url), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          'Mcp-Session-Id': session.transport.sessionId ?? '',
+        },
+        body: ping,
+      });
+      assert.strictEqual(status, 404);
+    } finally {
+      await reaping.close();
+    }
+  });
+
+  it('keeps a session that keeps sending requests', async () => {
+    const reaping = await HttpServer.listen({
+      host: '127.0.0.1',
+      port: 0,
+      token: TOKEN,
+      sessionIdleTimeoutMs: IDLE_TIMEOUT_MS,
+      createMcpServer,
+    });
+    try {
+      const session = await connect(new URL(reaping.url));
+      const busyUntil = Date.now() + IDLE_TIMEOUT_MS * 2;
+      while (Date.now() < busyUntil) {
+        await new Promise(resolve => setTimeout(resolve, IDLE_TIMEOUT_MS / 8));
+        await session.client.listTools();
+      }
+      assert.strictEqual(reaping.sessionCount, 1);
+      await disconnectMcpSession(session);
+    } finally {
+      await reaping.close();
+    }
+  });
+
+  it('keeps every session when the idle timeout is zero', async () => {
+    const forever = await HttpServer.listen({
+      host: '127.0.0.1',
+      port: 0,
+      token: TOKEN,
+      sessionIdleTimeoutMs: 0,
+      createMcpServer,
+    });
+    try {
+      const session = await connect(new URL(forever.url));
+      await session.client.listTools();
+      await new Promise(resolve => setTimeout(resolve, IDLE_TIMEOUT_MS / 2));
+      assert.strictEqual(forever.sessionCount, 1);
+      await disconnectMcpSession(session);
+    } finally {
+      await forever.close();
     }
   });
 
